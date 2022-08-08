@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+ 
+	<head>
+		<title>GET VIDEO</title>
+		<meta charset="utf-8">
+	</head>
+ 
+	<body>
+		<!-- https://blog.csdn.net/LLL_liuhui/article/details/104558866 -->
+		<div id="">
+			<button id="start">开启摄像头</button><button id="close">关闭摄像头</button><button id="jietu">截图</button><button onclick="getImg()">保存图片</button>
+			
+		</div>
+		<video id="video" class="vio" autoplay="autoplay"></video>
+		<canvas id="canvas" width="400px" height="300px"></canvas>
+		<a id="down" style="opacity: 0;"></a>
+		<script>
+			let constraints = {
+				audio: true,
+				video: {
+					width: 400,
+					height: 300
+				}
+			};
+			
+				let video = document.getElementById("video");
+				let start = document.getElementById('start');
+				let close = document.getElementById('close'),
+					jietu = document.getElementById('jietu');
+			let MediaStreamTrack,image,
+					canvas = document.getElementById("canvas"),
+			context = canvas.getContext("2d");
+			var chunks = [];
+			window.onload = function() {
+				
+				
+				
+				isUseVideo();
+				// 开启摄像头
+				start.addEventListener('click', startVideo);
+				// 关闭摄像头
+				close.addEventListener('click', closeVideo);
+				// 截图
+				jietu.addEventListener('click', capture);
+				
+			}
+			// 判断浏览器是否可以调用摄像头
+			function isUseVideo(){
+				// 旧版本浏览器可能根本不支持mediaDevices，我们首先设置一个空对象
+				if (navigator.mediaDevices === undefined) {
+					navigator.mediaDevices = {};
+				}
+				// 一些浏览器实现了部分mediaDevices，我们不能只分配一个对象
+				// 使用getUserMedia，因为它会覆盖现有的属性。
+				// 这里，如果缺少getUserMedia属性，就添加它。
+				if (navigator.mediaDevices.getUserMedia === undefined) {
+					navigator.mediaDevices.getUserMedia = function(constraints) {
+						// 首先获取现存的getUserMedia(如果存在)
+						var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+						// 有些浏览器不支持，会返回错误信息
+						// 保持接口一致
+						if (!getUserMedia) {
+							return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+						}
+						//否则，使用Promise将调用包装到旧的navigator.getUserMedia
+						return new Promise(function(resolve, reject) {
+							getUserMedia.call(navigator, constraints, resolve, reject);
+						});
+					}
+				}
+			}
+			// 调用摄像头
+			function startVideo(){
+				/**
+				 * 录像展示的位置
+				 */
+				let promise = navigator.mediaDevices.getUserMedia(constraints);
+				promise.then((MediaStream) => {
+					/**
+					 * MediaStream 
+					 * id: "AfO1m9bSx1TCzvpjKlemjEVWwoVkkg3NbfMP"
+					 * active: true
+					 * onaddtrack: null
+					 * onremovetrack: null
+					 * onactive: null
+					 * oninactive: null
+					 */
+					console.log(MediaStream);
+					MediaStreamTrack = MediaStream;
+					if ("srcObject" in video) {
+						video.srcObject = MediaStream;
+					} else {
+						//避免在新的浏览器中使用它，因为它正在被弃用。
+						video.src = window.URL.createObjectURL(MediaStream);
+					}
+					video.onloadedmetadata = function(e) {
+						video.play();
+					};
+				}).catch((error) => {
+					console.info(error);
+				});
+			}
+			function closeVideo(){
+				// 两种方法都可以,这个0是指constraints的对象,下标从后面开始计数
+				MediaStreamTrack && MediaStreamTrack.getVideoTracks()[0].stop();
+			}
+			// 截图
+			function capture(){
+				// canvas画图
+				context.drawImage(video, 0, 0, 400, 300);
+				// 获取图片base64链接
+				image = canvas.toDataURL('image/png');
+				
+				//将图片添加到页面中
+				//document.body.appendChild(img)
+				if (image) {
+					// 将图片转为file文件格式
+					/**
+					 * File {name: "ssssss", lastModified: 1582789789554, lastModifiedDate: Thu Feb 27 2020 15:49:49 GMT+0800 (中国标准时间), webkitRelativePath: "", size: 34598, …}
+						name: "ssssss"
+						lastModified: 1582789789554
+						lastModifiedDate: Thu Feb 27 2020 15:49:49 GMT+0800 (中国标准时间) {}
+						webkitRelativePath: ""
+						size: 34598
+						type: "image/png"
+						__proto__: File
+					 */
+					let res = dataURLtoFile(image, 'ssssss')
+					console.log(res)
+				}
+				closeVideo()
+			}
+			
+			// base64转文件
+			function dataURLtoFile(dataurl, filename) {
+				var arr = dataurl.split(','),
+					mime = arr[0].match(/:(.*?);/)[1],
+					bstr = atob(arr[1]),
+					n = bstr.length,
+					u8arr = new Uint8Array(n);
+				while (n--) {
+					u8arr[n] = bstr.charCodeAt(n);
+				}
+				return new File([u8arr], filename, {
+					type: mime
+				});
+			}
+			
+			// 保存图片到本地
+			function getImg(){
+				
+				// 定义一个img
+				var img = new Image();
+				//设置属性和src
+				img.id = "newImg";
+				img.src = image;
+				img.onload = function(){
+					let a = document.getElementById('down');
+					a.appendChild(img)
+					a.href=image;
+					a.download='aaa'; // 下载的图片的名称
+					a.click()
+				}
+				
+			}
+		</script>
+	</body>
+ 
+</html>
+
