@@ -1,7 +1,0 @@
-/node_modules
-
-!.gitkeep
-
-*.log
-
-*.DS_Store
